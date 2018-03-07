@@ -156,9 +156,12 @@ try:
     from concurrent.futures import ThreadPoolExecutor
     e = ThreadPoolExecutor()
 except ImportError or ImportWarning:
+    import subprocess
     subprocess.call("pip3 install asyncio --upgrade ", shell=True)
     subprocess._cleanup()
     import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+    e = ThreadPoolExecutor()
 
 def killpid():
     os.kill(os.getpid(), 9)
@@ -233,7 +236,7 @@ class Task(Future):
             self._step(res, None)
 
 
-print("Beginning The Py2 and Py3 Asyncio Loops for python Modules installtion.")
+print("Beginning The Py2 and Py3 Asyncio Loops for python Modules installation.")
 loop = asyncio.get_event_loop()
 tasks = [Task(dostuffpy2(), loop=loop),
          loop.create_task(dostuffpy3())]
