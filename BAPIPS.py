@@ -2,7 +2,7 @@
 import os
 import time
 
-
+brokenshit = []
 euid = os.geteuid()
 if euid == 0:
     print("You Cannot perform any upgrades or repairs while logged in with root permissions, Try again without Root/Sudo..")
@@ -170,38 +170,53 @@ a1a = len(py2stuff)
 a2a = len(py3stuff)
 
 
-#todo add Exception Os.Error handling if detects corrupted permissions or ownership of detected files.
 @asyncio.coroutine
 def dostuffpy2():
+    brokencount = 0
     for i in range(a1a):
         for hodor in py2stuff:
             try:
-                subprocess.call(["pip2 install --upgrade --no-deps --force-reinstall " + hodor], shell=True, timeout=61)
+                subprocess.call(["pip2 install --upgrade --no-deps --force-reinstall --user " + hodor], shell=True, timeout=61)
                 subprocess._cleanup()
             except Exception as durin:
+                if str("OSError") in str(durin):
+                    brokenshit.append([hodor])
+                    brokencount += 1
+                    print("Broken permissions detected on a directory, adding to To Fix database, Affected modules= :" + brokencount)
+                    subprocess._cleanup()
+                else:
+                    pass
                 print("skipping the module" + hodor + "because of" + "\n" + str(durin))
                 subprocess._cleanup()
 
 
 @asyncio.coroutine
 def dostuffpy3():
+    brokencount = 0
     for i in range(a2a):
         for holdthedoor in py3stuff:
             try:
-                subprocess.call(["pip3 install --upgrade --no-deps --force-reinstall " + holdthedoor], shell=True, timeout=61)
+                subprocess.call(["pip3 install --upgrade --no-deps --force-reinstall --user " + holdthedoor], shell=True, timeout=61)
                 subprocess._cleanup()
             except Exception as durins:
+                if str("OSError") in str(durins):
+                    brokenshit.append([holdthedoor])
+                    brokencount += 1
+                    print("Broken permissions detected on a directory, adding to To Fix database, Affected modules= :" + brokencount)
+                    subprocess._cleanup()
+                else:
+                    pass
                 print("skipping the module" + holdthedoor + "because of" + "\n" + str(durins))
                 subprocess._cleanup()
 
 
 @asyncio.coroutine
 def finishingup1():
-    subprocess.call(["pip2 freeze --local | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip2 install -U"], shell=True)
+    subprocess.call(["pip2 freeze --local --user | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip2 install -U --user"], shell=True)
     subprocess._cleanup()
 @asyncio.coroutine
 def finishingup2():
-    subprocess.call(["pip3 freeze --local | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip3 install -U"], shell=True)
+    subprocess.call(["pip3 freeze --local --user | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip3 install -U --user"], shell=True)
     subprocess._cleanup()
 
 
@@ -236,6 +251,8 @@ class Task(Future):
             self._step(res, None)
 
 
+#todo    Pip possibly lockfiling being a bottleneck on speed, need to rectify, While true loops possibly
+#todo    so any locks are deleted on creation?
 print("Beginning The Py2 and Py3 Asyncio Loops for python Modules installation.")
 loop = asyncio.get_event_loop()
 tasks = [Task(dostuffpy2(), loop=loop),
@@ -248,6 +265,14 @@ tasks2 = [Task(finishingup1(), loop=loop2),
           loop2.create_task(finishingup2())]
 loop2.run_until_complete(asyncio.wait(tasks2))
 loop2.close()
+
+
+#todo    Decide best way to do the Elevated permissions to fix the directory problems
+#todo    so they are dropped as soon as can be.
+if brokenshit != []:
+    print("Looks like the script detected your systems python installations has a few permissions errors,")
+    print("Dont worry, these were the droids we were looking, to fix the situation Root/Sudo may be required.")
+    time.sleep(7)
 print("Finished Everything... Gratz!")
 time.sleep(5)
 killpid()
